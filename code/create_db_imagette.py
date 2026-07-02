@@ -15,7 +15,7 @@ folder_path = "../refactored_data/"
 files = get_files("./refactored_data/")
 dts = []
 
-tgv_corr = True
+tgv_corr = False
 
 for i, filename in enumerate(files):
     if(filename != "2024__0931101_Binned.nc"):
@@ -39,7 +39,7 @@ max_grid_x = max(ship_x)
 min_grid_y = min(ship_y)
 max_grid_y = max(ship_y)
 
-step = 20
+step = 30
 
 
 x_range = np.arange(min_grid_x, max_grid_x + step, step)
@@ -54,7 +54,7 @@ nb_lignes, nb_colonnes = X_grid.shape
 dictionnaire_imagettes = {}
 
     
-dci = DatabaseCreatorImagette("./database_3000x200_full_track_corr.nc")
+dci = DatabaseCreatorImagette("./database_3000x100_full.nc")
 init_main = False
 
 total_groups = nb_lignes * nb_colonnes
@@ -65,7 +65,7 @@ for i in range(nb_lignes):
         y = Y_grid[i, j]
 
         # On extrait les imagettes JUSTE pour cette case (x, y)
-        imagettes_locat = rb.extract_imagette(sonarPings, Point(x, y, 0), 200, 3000, tgv=tgv_corr)
+        imagettes_locat = rb.extract_imagette(sonarPings, Point(x, y, 0), 100, 3000, tgv=tgv_corr)
 
         if len(imagettes_locat) < 10:
             # on passe si moins de 10 imagettes

@@ -1,0 +1,11 @@
+Zone1
+Data
+path
+*.zip
+Dataset Metric
+*.nc
+code/__pycache__
+code/.venv
+code_v_extraction_image/__pycache__
+code/lib/__pycache__
+
