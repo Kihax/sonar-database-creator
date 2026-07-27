@@ -54,13 +54,14 @@ class SonarPing:
         self.middle = len(sample) // 2
         
         sample_np = np.array(sample)
-        
+
+
         sample_stbd = sample_np[self.middle:]
         sample_port = np.flip(sample_np[0:self.middle])
 
         indices = np.arange(len(sample_stbd))
         
-        gains = (indices * delta_time * self.sound_speed / 2) ** 2
+        gains = (indices * delta_time * self.sound_speed / 2) ** 4
 
         sample_stbd = sample_stbd * gains
         sample_port = sample_port * gains
@@ -85,11 +86,11 @@ class SonarPing:
         """
             Get the index distance where the depth is reached in this sonar ping relative to middle
         """
-        return int(-2*self.depth/(self.sound_speed*self.delta_time))
+        return int(2*self.depth/(self.sound_speed*self.delta_time))
     
     def get_index_depth_absolute(self):
         """
-            Get index position wher ethe depth is reached
+            Get index position where the depth is reached
         """
         i = self.get_index_depth_relative()
         middle = int(len(self.sample)/2)

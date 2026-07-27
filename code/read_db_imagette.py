@@ -13,7 +13,7 @@ from lib.ReadDatabaseImagette import ReadDatabaseImagette
 from lib.ScrollImageViewer import ScrollImageViewer
 import math
 
-dt = get_tree_from_file("database_interest_point.nc", "../")
+dt = get_tree_from_file("Grid-All-eq-sf100-without-nadir-augmented.nc", "../")
 dts = [dt]
 
 rdi = ReadDatabaseImagette(dts)

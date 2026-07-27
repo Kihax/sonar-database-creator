@@ -123,7 +123,7 @@ for i, filename in enumerate(files):
         ship_headings.append(ping.heading)
 
         indices = np.arange(len(sample_stbd))
-        gain = (sound_speed * delta_time * indices / 2) ** 2
+        gain = (sound_speed * delta_time * indices / 2) ** 4
         
         sample_stbd_corr = sample_stbd * gain
         sample_port_corr = sample_port * gain
@@ -134,7 +134,7 @@ for i, filename in enumerate(files):
     current_file_pings = len(sonarPings)
     num_samples = len(sonarPings[0].sample)
 
-    waterfall_matrix = np.array(waterfall_corr, dtype=float)
+    waterfall_matrix = np.array(waterfall, dtype=float)
     
     p1, p99 = np.percentile(waterfall_matrix, (1, 99))
     waterfall_stretched = np.clip((waterfall_matrix - p1) / (p99 - p1), 0.0, 1.0)
@@ -194,7 +194,7 @@ for i, filename in enumerate(files):
     ax1.set_xlabel("Samples")
 
     ax2.set_title("Corrected Waterfall (Lee Filtered)")
-    ax2.imshow(waterfall_clean, vmax=1.0, vmin=0.0, cmap='gray', aspect="auto", extent=img_extent_corr)
+    ax2.imshow(waterfall_stretched, vmax=1.0, vmin=0.0, cmap='gray', aspect="auto", extent=img_extent_corr)
     ax2.set_ylabel("Cumulated Ping Number")
     ax2.set_xlabel("Samples")
     plt.tight_layout()

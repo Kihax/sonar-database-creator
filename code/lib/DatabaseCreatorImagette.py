@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Dict, Tuple
+from typing import List
 from .Imagette import Imagette
 import netCDF4 as nc4
 
@@ -7,144 +7,165 @@ class DatabaseCreatorImagette:
 
     def __init__(self, path: str):
         """
-        On n'attend plus le dictionnaire complet ici. 
-        On ouvre simplement le fichier pour y écrire au fur et à mesure.
+        Ouvre le fichier NetCDF en écriture.
         """
         self.datasetNetCDF = nc4.Dataset(path, "w", format="NETCDF4", encoding='latin-1')
+        # 💡 SÉCURITÉ 1 : Désactive le parsing automatique des échelles de dimensions
+        # qui fait planter HDF5 lors des synchro sur de grands jeux de données.
+        self.datasetNetCDF.set_auto_chartostring(False)
 
-    def init_global_attributes(self, sample_imagette: Imagette, nb_groups: int, option: dict = None):
+    # ... (garder _get_or_create_variable, _get_or_create_dimension, init_global_attributes identiques) ...
+
+    def write_cell_data(self, x: float, y: float, list_imagettes: List[Imagette], id: int = 0):
+        ds = self.datasetNetCDF
+        
+        #target_w = ds.dimensions["width"].size
+        #target_h = ds.dimensions["height"].size
+
+        group_area_name = f"area_{id}"
+        imagettes_x_y = ds.groups[group_area_name] if group_area_name in ds.groups else ds.createGroup(group_area_name)
+
+        valid_count = 0
+        for idx_img, imagette in enumerate(list_imagettes):
+            img_np = np.array(imagette.imagette)
+            h, w = img_np.shape
+
+            #if h != target_h or w != target_w:
+            #    continue
+
+            pings = imagette.pings
+            #if len(pings) != target_h:
+            #    continue
+
+            try:
+
+                sub_group_name = f"imagette_{valid_count}"
+                sub_img_group = imagettes_x_y.groups[sub_group_name] if sub_group_name in imagettes_x_y.groups else imagettes_x_y.createGroup(sub_group_name)
+
+                self._get_or_create_dimension(sub_img_group, "height", h)
+                self._get_or_create_dimension(sub_img_group, "width", w)
+                self._get_or_create_dimension(sub_img_group, "size_point", 2)
+
+
+                survey_files = set()
+                for ping in pings:
+                    if ping.filename is not None:
+                        filename_str = str(ping.filename).strip()
+                        if filename_str and filename_str.lower() != "nan":
+                            survey_files.add(filename_str)
+
+                self._get_or_create_dimension(sub_img_group, "height", h)
+                self._get_or_create_dimension(sub_img_group, "width", w)
+                self._get_or_create_dimension(sub_img_group, "size_point", 2)
+
+                sub_img_group.setncattr("survey_files", list(survey_files))
+                sub_img_group.setncattr("detection_range", pings[0].detection_range)
+                sub_img_group.setncattr("frequency", pings[0].freq)
+                sub_img_group.setncattr("centered", "true" if imagette.centered else "false")
+                sub_img_group.setncattr("side", imagette.side)
+
+                var_image = self._get_or_create_variable(sub_img_group, "image", "f4", ("height", "width"))
+                var_pitch = self._get_or_create_variable(sub_img_group, "pitch", "f4", ("height",))
+                var_roll = self._get_or_create_variable(sub_img_group, "roll", "f4", ("height",))
+                var_yaw = self._get_or_create_variable(sub_img_group, "yaw", "f4", ("height",))
+                var_timestamp = self._get_or_create_variable(sub_img_group, "timestamp", "i8", ("height",))
+                var_heading = self._get_or_create_variable(sub_img_group, "heading", "f4", ("height",))
+                var_depth = self._get_or_create_variable(sub_img_group, "depth", "f4", ("height",))
+                var_heave = self._get_or_create_variable(sub_img_group, "heave", "f4", ("height",))
+                
+                var_point_eastern = self._get_or_create_variable(sub_img_group, "point_eastern", "f8", ("size_point",))
+                var_point_western = self._get_or_create_variable(sub_img_group, "point_western", "f8", ("size_point",))
+                var_point_southern = self._get_or_create_variable(sub_img_group, "point_southern", "f8", ("size_point",))
+                var_point_nothern = self._get_or_create_variable(sub_img_group, "point_nothern", "f8", ("size_point",))
+
+                var_ship_position = self._get_or_create_variable(sub_img_group, "ship_position", "f8", ("height", "size_point"))
+                var_delta_time = self._get_or_create_variable(sub_img_group, "delta_time", "f4", ("height",))
+                var_sound_speed = self._get_or_create_variable(sub_img_group, "sound_speed", "f4", ("height",))
+
+                var_image[:, :] = img_np
+                var_pitch[:] = [p.pitch for p in pings]
+                var_roll[:] = [p.roll for p in pings]
+                var_yaw[:] = [p.yaw for p in pings]
+                var_timestamp[:] = [p.timestamp for p in pings]
+                var_heading[:] = [p.heading for p in pings]
+                var_depth[:] = [p.depth for p in pings]
+                var_heave[:] = [p.heave for p in pings]
+                var_delta_time[:] = [p.delta_time for p in pings]
+                var_sound_speed[:] = [p.sound_speed for p in pings]
+                
+                ship_pos = [[p.point_ship.eastern, p.point_ship.northern] for p in pings]
+                var_ship_position[:, :] = np.array(ship_pos, dtype=np.float64)
+
+                var_point_eastern[:] = [imagette.point_most_eastern.eastern, imagette.point_most_eastern.northern]
+                var_point_western[:] = [imagette.point_most_western.eastern, imagette.point_most_western.northern]
+                var_point_southern[:] = [imagette.point_most_southern.eastern, imagette.point_most_southern.northern]
+                var_point_nothern[:] = [imagette.point_most_northern.eastern, imagette.point_most_northern.northern]
+                
+                valid_count += 1
+
+            except Exception as e:
+                print(f"Erreur lors de l'écriture de l'imagette {idx_img} dans le groupe {group_area_name}: {e}")
+                continue
+        
+
+        imagettes_x_y.setncattr("easting", x)
+        imagettes_x_y.setncattr("northing", y)
+        imagettes_x_y.setncattr("nb_imagette", valid_count)
+
+    def _get_or_create_variable(self, group: nc4.Group, name: str, datatype: str, dimensions: tuple) -> nc4.Variable:
         """
-        Initialise les dimensions et attributs globaux du fichier NetCDF 
-        dès qu'on trouve la première imagette valide.
+        Récupère la variable si elle existe déjà, sinon la crée.
+        """
+        if name in group.variables:
+            return group.variables[name]
+        return group.createVariable(name, datatype, dimensions)
+
+    def _get_or_create_dimension(self, group: nc4.Group, name: str, size: int):
+        """
+        S'assure qu'une dimension n'est créée qu'une seule fois.
+        """
+        if name not in group.dimensions:
+            group.createDimension(name, size)
+
+    def init_global_attributes(self, width : float, height: float, option: dict = None):
+        """
+        Initialise les dimensions et attributs globaux à la RACINE du fichier NetCDF.
+        """
+        if option is None:
+            option = {}
+            
+        ds = self.datasetNetCDF
+
+        ds.setncattr("width", width)
+        ds.setncattr("height", height)
+        ds.setncattr("sonar", "EdgeTech 6205")
+        ds.setncattr("TVG", "true" if option.get("TVG", False) else "false")
+        ds.setncattr("filter", option.get("filter", "false"))
+
+    def init_global_attributes_from_database(self, sample_imagette, nb_groups: int, option: dict = None):
+        """
+        Alternative pour initialiser le fichier à partir d'un objet ImagetteDatabase.
         """
         if option is None:
             option = {}
             
         ds = self.datasetNetCDF
         
-        # Définition des dimensions globales basées sur la structure d'une imagette
-        ds.setncattr("width", len(sample_imagette.imagette[0]))
-        ds.setncattr("height", len(sample_imagette.imagette))
+        img_np = sample_imagette.image.values if hasattr(sample_imagette.image, "values") else np.array(sample_imagette.image)
+        h, w = img_np.shape
+        
+        ds.setncattr("width", w)
+        ds.setncattr("height", h)
         ds.setncattr("sonar", "EdgeTech 6205")
 
-        print(f"width : {len(sample_imagette.imagette[0])}")
-        print(f"height : {len(sample_imagette.imagette)}" )
-        
-        ds.createDimension("width", len(sample_imagette.imagette[0]))
-        ds.createDimension("height", len(sample_imagette.imagette))
-        ds.createDimension("size_point", 2)
+        print(f"Dimensions globales initialisées : width={w}, height={h}")
         
         ds.setncattr("nb_group", nb_groups)
         ds.setncattr("TVG", "true" if option.get("TVG", False) else "false")
         ds.setncattr("filter", option.get("filter", "false"))
 
-    def write_cell_data(self, x: float, y: float, list_imagettes: List[Imagette], id : int = 0):
-        """
-        Écrit les imagettes d'UNE SEULE coordonnée (x, y) puis libère la mémoire.
-        """
-        ds = self.datasetNetCDF
-        
-        # Création du groupe pour la cellule (x, y) courante
-        imagettes_x_y = ds.createGroup(f"area_{id}")
-        imagettes_x_y.setncattr("easting", x)
-        imagettes_x_y.setncattr("northing", y)
-        imagettes_x_y.setncattr("nb_imagette", len(list_imagettes))
-
-        # Écriture séquentielle de chaque imagette de la cellule
-        for i, imagette in enumerate(list_imagettes):
-            
-            img_np = np.array(imagette.imagette)
-            h, w = img_np.shape
-
-            # Sécurité si une imagette est vide
-            if h == 0 or w == 0:
-                continue
-
-            sub_img_group = imagettes_x_y.createGroup(f"imagette_{i}")
-            
-            # --- CORRECTION ICI : On crée des dimensions propres au sous-groupe ---
-            sub_img_group.createDimension("local_height", h)
-            sub_img_group.createDimension("local_width", w)
-
-            survey_files = set()
-            for ping in imagette.pings:
-                if ping.filename is not None:
-                    filename_str = ping.filename
-                    
-                    # --- NOUVELLE LOGIQUE DE NETTOYAGE BLINDÉE ---
-                    # 1. Gestion des objets NumPy (Tableaux ou Scalaires comme np.str_)
-                    if isinstance(filename_str, (np.ndarray, np.generic)):
-                        if np.ndim(filename_str) > 0:  # Si c'est un vrai tableau
-                            if filename_str.size == 0:
-                                continue
-                            filename_str = filename_str.flat[0]
-                        else:  # Si c'est un scalaire (votre cas ici)
-                            filename_str = filename_str.item()
-                            
-                    # 2. Gestion des listes Python standards
-                    elif isinstance(filename_str, list):
-                        if len(filename_str) == 0:
-                            continue
-                        filename_str = filename_str[0]
-                    
-                    # 3. Conversion finale propre en chaîne Python standard
-                    filename_str = str(filename_str).strip()
-
-                    # Ajout sécurisé dans les sets (on ignore les chaînes vides ou les "nan")
-                    if filename_str and filename_str.lower() != "nan":
-                        survey_files.add(filename_str)
-
-            # Attributs de l'imagette
-            sub_img_group.setncattr("survey_files", list(survey_files))
-            sub_img_group.setncattr("detection_range", imagette.pings[0].detection_range)
-            sub_img_group.setncattr("frequency", imagette.pings[0].freq)
-            sub_img_group.setncattr("centered", "true" if imagette.centered else "false")
-            sub_img_group.setncattr("side", imagette.side)
-            
-
-            # On utilise les dimensions locales ("local_height", "local_width")
-            var_image = sub_img_group.createVariable("image", "f4", ("local_height", "local_width"))
-            var_pitch = sub_img_group.createVariable("pitch", "f4", ("local_height",))
-            var_roll = sub_img_group.createVariable("roll", "f4", ("local_height",))
-            var_yaw = sub_img_group.createVariable("yaw", "f4", ("local_height",))
-            var_timestamp = sub_img_group.createVariable("timestamp", "i8", ("local_height",))
-            var_heading = sub_img_group.createVariable("heading", "f4", ("local_height",))
-            var_depth = sub_img_group.createVariable("depth", "f4", ("local_height",))
-            var_heave = sub_img_group.createVariable("heave", "f4", ("local_height",))
-            
-            # "size_point" reste global (il vaut toujours 2)
-            var_point_eastern = sub_img_group.createVariable("point_eastern", "f8", ("size_point",))
-            var_point_western = sub_img_group.createVariable("point_western", "f8", ("size_point",))
-            var_point_southern = sub_img_group.createVariable("point_southern", "f8", ("size_point",))
-            var_point_nothern = sub_img_group.createVariable("point_nothern", "f8", ("size_point",))
-
-            var_ship_position = sub_img_group.createVariable("ship_position", "f8", ("local_height", "size_point",))
-
-            var_delta_time = sub_img_group.createVariable("delta_time", "f4", ("local_height",))
-            var_sound_speed = sub_img_group.createVariable("sound_speed", "f4", ("local_height",))
-
-            # Cette fois-ci, l'écriture directe passera sans broncher
-            var_image[:, :] = img_np
-            
-            # Utilisation de list comprehensions évaluées à la volée
-            var_pitch[:] = [p.pitch for p in imagette.pings]
-            var_roll[:] = [p.roll for p in imagette.pings]
-            var_yaw[:] = [p.yaw for p in imagette.pings]
-            var_timestamp[:] = [p.timestamp for p in imagette.pings]
-            var_heading[:] = [p.heading for p in imagette.pings]
-            var_depth[:] = [p.depth for p in imagette.pings]
-            var_heave[:] = [p.heave for p in imagette.pings]
-            var_delta_time[:] = [p.delta_time for p in imagette.pings]
-            var_sound_speed[:] = [p.sound_speed for p in imagette.pings]
-            var_ship_position[:] = [ [p.point_ship.eastern, p.point_ship.northern] for p in imagette.pings ]
-
-            var_point_eastern[:] = [imagette.point_most_eastern.eastern, imagette.point_most_eastern.northern]
-            var_point_western[:] = [imagette.point_most_western.eastern, imagette.point_most_western.northern]
-            var_point_southern[:] = [imagette.point_most_southern.eastern, imagette.point_most_southern.northern]
-            var_point_nothern[:] = [imagette.point_most_northern.eastern, imagette.point_most_northern.northern]
-
-        ds.sync()
-
     def close(self):
-        """Ferme proprement le fichier en fin de script."""
+        """
+        Ferme proprement le fichier en fin de traitement.
+        """
         self.datasetNetCDF.close()

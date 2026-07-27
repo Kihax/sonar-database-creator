@@ -12,8 +12,8 @@ import cv2
 import numpy as np
 import math
 
-folder_path = "../refactored_data/"
-files = get_files("./refactored_data/")
+folder_path = "../refactored_data_survey1/"
+files = get_files("./refactored_data_survey1/")
 print(files)
 
 total_pings_counter = 0

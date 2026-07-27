@@ -1,3 +1,5 @@
+from .DepthMap import DepthMap
+
 from .DataManagement import DataManagement
 from .timetag_to_timestamp import timetag_to_timestamp
 from .Point import Point
@@ -23,6 +25,7 @@ class Sonar:
             self.data = data
         else:
             self.data = DataManagement(dts)
+        self.depth_map = DepthMap(dts, self.data)
 
     def compute_bathymetry(self, ping_timetag : int, angle_bathymetry_port : List[float], angle_bathymetry_starboard : List[float], time_bathymetry_port : List[float], time_bathymetry_starboard : List[float], quality_bathymetry_starboard : List[int], quality_bathymetry_port : List[int], sound_speed : float = 1475.0):
         """
@@ -150,6 +153,104 @@ class Sonar:
         roughness_indicator = np.std(local_slopes)
 
         return roughness_indicator
+    
+    def extract_lines_depth_map(self, f: str = "LF", storage: List[SonarPing] = None) -> None:
+        """
+        Extract sonar lines and compute bathymetric indicators, storing results in a depth map.
+
+        Parameters
+        ----------
+        f : str, optional
+            Frequency type to extract, either "LF" (Low Frequency) or "HF" (High
+            Frequency). Default is "LF".
+        storage : List[SonarPing], optional
+            A mutable list where the extracted and processed SonarPing objects will
+            be appended. If None, an empty list is initialized.
+        """
+        if storage is None:
+            storage = []
+
+        data = self.data
+
+        for dt in self.dts:
+            filename = dt.attrs.get("Survey file")
+            # Skip specific faulty or template files
+            if filename == "2024__1001410_0001.001_Binned":
+                continue
+            print(f"Processing file: {filename}")
+
+            # Base paths for sonar blocks
+            port_path = f"/Sonar/SLS {f}/Port/Block_0"
+            stbd_path = f"/Sonar/SLS {f}/Starboard/Block_0"
+
+            # Extract parameters
+            sonar_range = dt[port_path].attrs["range (m)"]
+            delta_time = dt[port_path].attrs["sample_duration (s)"]
+
+            # Pre-load data matrices into memory to drastically speed up the loop
+            samples_port = dt[port_path].samples.values
+            samples_starboard = dt[stbd_path].samples.values
+            limit_sample = len(samples_port[0])
+
+            timestamps = timetag_to_timestamp(dt[port_path].timetag.values)
+
+            for i in range(len(timestamps)):
+                timestamp = timestamps[i]
+                sample_port = samples_port[i][0:limit_sample]
+                sample_starboard = samples_starboard[i][0:limit_sample]
+
+                
+
+                if len(sample_port) != limit_sample:
+                    continue
+
+                # Reconstruct the complete ping signal (Port is flipped to maintain geometry)
+                full_ping_sample = np.zeros(2 * limit_sample)
+                full_ping_sample[0:limit_sample] = np.flip(sample_port)
+                full_ping_sample[limit_sample : 2 * limit_sample] = sample_starboard
+
+                # Retrieve navigation data
+                sonar_east, sonar_north = self.data.get_position_corr(timestamp)
+                sonar_z = vessel_z + lever_arm_trans_rotated[2]
+
+                # 3. Instanciation du point du navire mis à jour à la position réelle du sonar
+                ship = Point(sonar_east, sonar_north, heading)
+
+                # Calculate maximum horizontal swath coverage range
+                if sonar_range > abs(depth):
+                    x_max = math.sqrt(sonar_range**2 - depth**2)
+                else:
+                    x_max = 0.0
+
+                starboard_extretmity = ship.lateral_points_pos_sonar(x_max, "starboard")
+                port_extremity = ship.lateral_points_pos_sonar(x_max, "port")
+
+                # Append the structured data to the storage list
+                storage.append(
+                    SonarPing(
+                        full_ping_sample,
+                        ship,
+                        starboard_extretmity,
+                        port_extremity,
+                        roll,
+                        pitch,
+                        yaw,
+                        heave,
+                        heading,
+                        timestamp,
+                        depth,
+                        flat_seafloor_indicator,
+                        rough_seafloor_indicator,
+                        x_bathy=x_bathymetry,
+                        z_bathy=z_bathymetry,
+                        freq=f,
+                        delta_time=delta_time,
+                        filename=filename,
+                    )
+                )
+
+        # Sort storage by timestamp to prevent asynchronous gaps in the outputs
+        storage.sort(key=lambda ping: ping.timestamp)
 
 
     def extract_lines(self, f: str = "LF", storage: List[SonarPing] = None) -> None:
@@ -228,8 +329,7 @@ class Sonar:
                     qualities_b_port[i],
                 )
 
-                # Average depth between last port point and first starboard point
-                depth = (z_port[-1] + z_stbd[0]) / 2
+                depth = abs((z_port[-1] + z_stbd[0]) / 2)
 
                 # Concatenate and sort bathymetry profile
                 x_bathymetry = np.concatenate([x_port, x_stbd])
@@ -298,7 +398,7 @@ class Sonar:
                 R = R_yaw @ R_pitch @ R_roll
 
                 # 1. Bras de levier : Antenne GPS -> Point de Référence du navire (0,0,0)
-                lever_arm_nav = np.array([0.0, 0.33, 2.836])
+                lever_arm_nav = np.array([0.0, 0.33, -2.836])
                 lever_arm_nav_rotated = R @ lever_arm_nav
                 
                 vessel_east = eastern - lever_arm_nav_rotated[0]
@@ -317,10 +417,6 @@ class Sonar:
 
                 # 3. Instanciation du point du navire mis à jour à la position réelle du sonar
                 ship = Point(sonar_east, sonar_north, heading)
-
-                # Prise en compte du décalage vertical (Z) du sonar pour la profondeur réelle sous le capteur
-                # (z_port et z_stbd étant déjà négatifs et calculés par rapport au transducteur)
-                depth = ((z_port[-1] + z_stbd[0]) / 2) + sonar_z
 
                 # Calculate maximum horizontal swath coverage range
                 if sonar_range > abs(depth):

@@ -1,0 +1,15 @@
+Époque 01/15 | Train Loss: 0.2505 | Val Loss: 0.2479 | LR: 0.000100 💾 [Meilleur modèle mis à jour]
+Époque 02/15 | Train Loss: 0.2381 | Val Loss: 0.2368 | LR: 0.000100 💾 [Meilleur modèle mis à jour]
+Époque 03/15 | Train Loss: 0.2293 | Val Loss: 0.2314 | LR: 0.000100 💾 [Meilleur modèle mis à jour]
+Époque 04/15 | Train Loss: 0.2254 | Val Loss: 0.2212 | LR: 0.000100 💾 [Meilleur modèle mis à jour]
+Époque 05/15 | Train Loss: 0.2206 | Val Loss: 0.2172 | LR: 0.000100 💾 [Meilleur modèle mis à jour]
+Époque 06/15 | Train Loss: 0.2183 | Val Loss: 0.2352 | LR: 0.000100
+Époque 07/15 | Train Loss: 0.2153 | Val Loss: 0.2063 | LR: 0.000100 💾 [Meilleur modèle mis à jour]
+Époque 08/15 | Train Loss: 0.2121 | Val Loss: 0.2028 | LR: 0.000100 💾 [Meilleur modèle mis à jour]
+Époque 09/15 | Train Loss: 0.2104 | Val Loss: 0.2188 | LR: 0.000100
+Époque 10/15 | Train Loss: 0.2081 | Val Loss: 0.2305 | LR: 0.000100
+Époque 11/15 | Train Loss: 0.2057 | Val Loss: 0.2190 | LR: 0.000100
+Époque 12/15 | Train Loss: 0.2041 | Val Loss: 0.2394 | LR: 0.000100
+Époque 13/15 | Train Loss: 0.2017 | Val Loss: 0.2153 | LR: 0.000100
+Époque 14/15 | Train Loss: 0.2003 | Val Loss: 0.2077 | LR: 0.000050
+Époque 15/15 | Train Loss: 0.1945 | Val Loss: 0.2032 | LR: 0.000050

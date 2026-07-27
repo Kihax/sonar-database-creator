@@ -148,3 +148,62 @@ class ReadDatabaseImagette:
                 print(f"Position {coord} retenue : {match_count}/{len(list_imagettes)} imagettes contiennent le point.")
 
         return matching_groups
+    
+    def get_groups_with_75_percent_containing_point(self, target_point: Point) -> Tuple[tuple, List]:
+        """
+        Parcourt self.pos_imagette et renvoie le MEILLEUR groupe d'imagettes 
+        dont au moins 75% des imagettes contiennent le point cible.
+        
+        Args:
+            target_point (Point): L'objet Point recherché (doit avoir .eastern et .northern)
+            
+        Returns:
+            Tuple[tuple, List]: (coordonnées_du_groupe, liste_des_imagettes) ou (None, []) si non trouvé
+        """
+        best_coord = None
+        best_list = []
+        max_rate = 0.0
+
+        for coord, list_imagettes in self.pos_imagette.items():
+            if not list_imagettes:
+                continue
+                
+            match_count = 0
+            total_imagettes = len(list_imagettes)
+            
+            for img_obj in list_imagettes:
+                # 1. Extraction des coordonnées UTM de chaque coin (Est et Nord)
+                eastings = [
+                    img_obj.point_eastern[0], 
+                    img_obj.point_western[0], 
+                    img_obj.point_southern[0], 
+                    img_obj.point_northern[0]
+                ]
+                northings = [
+                    img_obj.point_eastern[1], 
+                    img_obj.point_western[1], 
+                    img_obj.point_southern[1], 
+                    img_obj.point_northern[1]
+                ]
+                
+                # 2. Définition de la Bounding Box de l'imagette
+                min_e, max_e = min(eastings), max(eastings)
+                min_n, max_n = min(northings), max(northings)
+                
+                # 3. Si le point est dedans, on incrémente le compteur
+                if (min_e <= target_point.eastern <= max_e) and (min_n <= target_point.northern <= max_n):
+                    match_count += 1
+            
+            # Calcul du taux d'inclusion réel du groupe
+            inclusion_rate = match_count / total_imagettes
+            
+            # On vérifie si on passe la barre des 75% et si c'est le meilleur groupe trouvé
+            if inclusion_rate >= 0.75 and inclusion_rate > max_rate:
+                max_rate = inclusion_rate
+                best_coord = coord
+                best_list = list_imagettes
+
+        if best_coord:
+            print(f"🎯 Groupe trouvé à {best_coord} avec un taux de {max_rate*100:.1f}% ({len(best_list)} imagettes).")
+            
+        return best_coord, best_list

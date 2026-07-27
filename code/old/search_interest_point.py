@@ -10,8 +10,8 @@ from typing import List
 from lib.SonarPing import SonarPing
 
 
-folder_path = "../refactored_data/"
-files = get_files("./refactored_data/")
+folder_path = "../refactored_data_survey1/"
+files = get_files("./refactored_data_survey1/")
 dts = [get_tree_from_file(filename, folder_path) for filename in files]
 
 rd = ReadDatabasePing(dts)

@@ -33,11 +33,15 @@ for ping in sonarPings:
     ship_x.append(ping.point_ship.eastern)
     ship_y.append(ping.point_ship.northern)
 
-min_grid_x=min(ship_x)
+min_grid_x= min(ship_x)
 max_grid_x = max(ship_x)
 
 min_grid_y = min(ship_y)
 max_grid_y = max(ship_y)
+
+
+print(f"min_grid_x: {min_grid_x}, max_grid_x: {max_grid_x}")
+print(f"min_grid_y: {min_grid_y}, max_grid_y: {max_grid_y}")
 
 step = 30
 
@@ -50,11 +54,12 @@ X_grid, Y_grid = np.meshgrid(x_range, y_range)
 
 nb_lignes, nb_colonnes = X_grid.shape
 
+print(nb_lignes, nb_colonnes)
 
 dictionnaire_imagettes = {}
 
     
-dci = DatabaseCreatorImagette("./database_3000x100_full.nc")
+dci = DatabaseCreatorImagette("./Grid-All-eq-sf100.nc")
 init_main = False
 
 total_groups = nb_lignes * nb_colonnes
@@ -65,10 +70,10 @@ for i in range(nb_lignes):
         y = Y_grid[i, j]
 
         # On extrait les imagettes JUSTE pour cette case (x, y)
-        imagettes_locat = rb.extract_imagette(sonarPings, Point(x, y, 0), 100, 3000, tgv=tgv_corr)
+        imagettes_locat = rb.extract_imagette(sonarPings, Point(x, y, 0), 100, 3000, tgv=tgv_corr, strict_single_file=True, only_centered=False)
 
-        if len(imagettes_locat) < 10:
-            # on passe si moins de 10 imagettes
+        if len(imagettes_locat) < 5:
+            # on passe si moins de 5 imagettes
             continue
 
         # Initialisation unique des dimensions globales
@@ -86,3 +91,4 @@ for i in range(nb_lignes):
 
 # Fermeture finale indispensable
 dci.close()
+print("finish")

@@ -46,3 +46,8 @@ class Imagette:
 
     def getImage(self):
         return np.array(self.imagette)
+    
+    def getDetectionRange(self) -> float:
+        if not self.pings:
+            return 0.0
+        return np.mean([ping.detection_range for ping in self.pings])

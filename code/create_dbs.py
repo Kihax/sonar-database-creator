@@ -12,8 +12,9 @@ i = 0
 dts = []
 for filename in files:
     
-    if(filename != "2024__1001410_0001.001_Binned"):
-        dt = get_tree_from_file(filename, "../Dataset Metric/")
+    if(filename != "2024__1001410_0001.001_Binned" and "Binned" in filename):
+        print(filename)
+        dt = get_tree_from_file(filename, folder_path)
         dts.append(dt)
         
     i+=1
@@ -23,6 +24,8 @@ data = DataManagement(dts)
 for i, dt in enumerate(dts):
     print(f"progress : {i}/{len(dts)}")
     s = Sonar([dt], data)
+    filename = dt["filename"].values
+    print(filename)
     s.extract_lines_LF()
     dc = DatabaseCreator(s.storage_LF, "./refactored_data/" + filename)
     dc.create()

@@ -24,8 +24,9 @@ for i, filename in enumerate(files):
 rb = ReadDatabasePing(dts)
 sonarPings = rb.get_sonarPings()
 
-sample = 2500
-ping = 1075
+ping = 1520
+sample = 1400
+
 (eastering, northering) = sonarPings[ping].get_position_from_index(sample)
 print(f"target : ({eastering}, {northering})")
 imagettes : List[Imagette] = rb.extract_imagette(sonarPings, Point(eastering, northering), max_dist=0.3, width=3000, height=200)
