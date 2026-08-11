@@ -17,7 +17,7 @@ class SonarSubNetwork(nn.Module):
         meta_feature_count = int(self.config.get("meta_feature_count", 5))
 
         layers = []
-        in_channels = 2
+        in_channels = 1
         current_channels = base_channels
 
         for block_idx in range(depth):

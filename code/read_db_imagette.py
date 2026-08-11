@@ -13,16 +13,21 @@ from lib.ReadDatabaseImagette import ReadDatabaseImagette
 from lib.ScrollImageViewer import ScrollImageViewer
 import math
 
-dt = get_tree_from_file("Grid-All-eq-sf100-without-nadir-augmented.nc", "../")
+dt = get_tree_from_file("HP-Centered-100.nc", "../")
 dts = [dt]
 
 rdi = ReadDatabaseImagette(dts)
 rdi.extract()
+min_imagettes = 0
 
 global_imagettes = rdi.pos_imagette
 
+matching_groups = {
+    coord: images for coord, images in global_imagettes.items() if len(images) > min_imagettes
+}
+
 # Boucle principale : affiche une position après l'autre
-for coord, list_imagettes in global_imagettes.items():
+for coord, list_imagettes in matching_groups.items():
     print(f"Affichage de la position {coord} ({len(list_imagettes)} imagettes).")
     viewer = ScrollImageViewer(coord, list_imagettes)
     viewer.show()

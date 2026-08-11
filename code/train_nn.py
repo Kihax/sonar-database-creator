@@ -10,26 +10,25 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 from torch.utils.data import DataLoader
 
-from lib.file_management import get_tree_from_file
-from lib.ReadDatabaseImagette import ReadDatabaseImagette
 from lib.SiameseSonarNetwork import SiameseSonarNetwork
-from lib.SonarPairDataset import SonarPairDataset
+from lib.SonarPairDataset import build_dataloader, prepare_datasets
 from lib.VisualiseurResultatSiamois import VisualiseurResultatsSiamois
 from lib.FuzzyDistanceClassifier import FuzzyDistanceClassifier
+from lib.LossFunctions import ContrastiveLoss
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 MODEL_NAME = "S3CNN-No-Meta"
-DATASET_NAME = "Grid-All-eq-sf100-wn"
+DATASET_NAME = "Grid-All-eq-sf100-wn-a"
 EPOCHS = 5
 DATASET_FILE = f"{DATASET_NAME}.nc"
-INFO= "o-h"
+INFO= "infonce"
 
 CONFIG = {
     "dataset_file": DATASET_FILE,
     "dataset_folder": "../",
     "target_size": (3000, 100),
-    "batch_size": 16,
+    "batch_size": 64,
     "learning_rate": 1e-4,
     "margin": 1.0,
     "epochs": EPOCHS,
@@ -72,38 +71,6 @@ def set_seed(seed: int = 42) -> None:
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
-
-
-def build_dataloader(groups: dict, config: dict, batch_size: int | None = None, shuffle: bool = False):
-    target_size = tuple(config.get("target_size", (256, 256)))
-    effective_batch_size = batch_size if batch_size is not None else int(config.get("batch_size", 16))
-    dataset = SonarPairDataset(groups, target_size=target_size, meta_config=config.get("model", {}))
-    loader = DataLoader(
-        dataset,
-        batch_size=effective_batch_size,
-        shuffle=shuffle,
-        num_workers=0,
-        pin_memory=False,
-        persistent_workers=False,
-    )
-    return loader, dataset
-
-
-def compute_predictions(model: nn.Module, dataloader: DataLoader, device: torch.device):
-    model.eval()
-    distances_list = []
-    labels_list = []
-
-    with torch.no_grad():
-        for img_A, meta_A, img_B, meta_B, labels in dataloader:
-            img_A, meta_A = img_A.to(device), meta_A.to(device)
-            img_B, meta_B = img_B.to(device), meta_B.to(device)
-
-            distances = model(img_A, meta_A, img_B, meta_B)
-            distances_list.append(distances.cpu().numpy())
-            labels_list.append(labels.numpy())
-
-    return np.concatenate(distances_list), np.concatenate(labels_list)
 
 
 def evaluate_loss(model: nn.Module, dataloader: DataLoader, criterion: nn.Module, device: torch.device) -> float:
@@ -254,68 +221,6 @@ def display_split_results(
     return predictions, accuracy
 
 
-class ContrastiveLoss(nn.Module):
-    def __init__(self, margin: float = 1.0):
-        super().__init__()
-        self.margin = margin
-
-    def forward(self, distance: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
-        distance = torch.clamp(distance, min=1e-6, max=100.0)
-        loss_pos = label * torch.pow(distance, 2)
-        loss_neg = (1 - label) * torch.pow(torch.clamp(self.margin - distance, min=0.0), 2)
-        loss = torch.mean(loss_pos + loss_neg)
-
-        if torch.isnan(loss):
-            print("⚠️  Warning: NaN detected in loss, replacing with safe value")
-            loss = torch.tensor(1.0, device=distance.device, dtype=distance.dtype)
-
-        return loss
-
-
-def prepare_datasets(config: dict):
-    print("--- Début du chargement de la base de données Sonar ---")
-
-    try:
-        torch.multiprocessing.set_sharing_strategy("file_system")
-    except Exception as error:
-        print(f"⚠️  Impossible de changer la stratégie de partage multiprocessing: {error}")
-
-    set_seed(int(config.get("seed", 42)))
-
-    dt = get_tree_from_file(config["dataset_file"], config["dataset_folder"])
-    dts = [dt]
-
-    rdi = ReadDatabaseImagette(dts)
-    rdi.extract()
-    global_imagettes = rdi.pos_imagette
-
-    total_imagettes = sum(len(images) for images in global_imagettes.values())
-    print(f"Nombre total d'objets imagettes : {total_imagettes}")
-
-    matching_groups = {coord: images for coord, images in global_imagettes.items() if len(images) >= 2}
-    all_coords = list(matching_groups.keys())
-    random.shuffle(all_coords)
-
-    total_groups = len(all_coords)
-    train_groups_count = int(config.get("train_ratio", 0.80) * total_groups)
-    val_groups_count = int(config.get("val_ratio", 0.10) * total_groups)
-
-    train_coords = all_coords[:train_groups_count]
-    val_coords = all_coords[train_groups_count : train_groups_count + val_groups_count]
-    test_coords = all_coords[train_groups_count + val_groups_count :]
-
-    train_groups = {coord: matching_groups[coord] for coord in train_coords}
-    val_groups = {coord: matching_groups[coord] for coord in val_coords}
-    test_groups = {coord: matching_groups[coord] for coord in test_coords}
-
-    print("\nRépartition des points d'intérêt (Objets physiques) :")
-    print(f"  ├─ Train : {len(train_groups)} objets")
-    print(f"  ├─ Val   : {len(val_groups)} objets")
-    print(f"  └─ Test  : {len(test_groups)} objets")
-
-    return train_groups, val_groups, test_groups
-
-
 def main(config: dict | None = None):
     config = config or CONFIG
     print("Configuration du training :")
@@ -326,6 +231,8 @@ def main(config: dict | None = None):
                 print(f"    - {model_key}: {model_value}")
         else:
             print(f"  - {key}: {value}")
+
+    set_seed(int(config.get("seed", 42)))
 
     train_groups, val_groups, test_groups = prepare_datasets(config)
 
@@ -439,9 +346,10 @@ def main(config: dict | None = None):
     checkpoint_path = Path(checkpoint_path)
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(checkpoint, checkpoint_path)
-    print(f"✅ Modèle sauvegardé sous : '{checkpoint_path}'")
 
-    print("\n--- 🔒 ÉVALUATION SUR LE JEU DE TEST (INÉDIT) ---")
+    print(f"✅ Modèle sauvegardé à : '{checkpoint_path}'")
+
+    print("\n--- ÉVALUATION SUR LE JEU DE TEST ---")
     test_distances, test_labels = compute_predictions(model, test_loader, device)
     display_split_results(
         "test", test_distances, test_labels, best_threshold, fuzzy_classifier, test_dataset, show_images=bool(config.get("show_images", False))
