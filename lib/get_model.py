@@ -5,11 +5,11 @@ from lib.LossFunctions import ContrastiveLoss, evaluate_loss, InfoNCELoss
 
 def get_model(CONFIG, device):
     if(CONFIG.get("model", {}).get("name") == "AttentionSiameseSonarNetwork"):
-        model = AttentionSiameseSonarNetwork(CONFIG.get("model", {})).to(device)
+        model = AttentionSiameseSonarNetwork(CONFIG).to(device)
     elif(CONFIG.get("model", {}).get("name") == "SiameseSonarNetwork"):
-        model = SiameseSonarNetwork(CONFIG.get("model", {})).to(device)
+        model = SiameseSonarNetwork(CONFIG).to(device)
     elif(CONFIG.get("model", {}).get("name") == "SiameseSonarResNet50"):
-        model = SiameseSonarResNet50(CONFIG.get("model", {})).to(device)
+        model = SiameseSonarResNet50(CONFIG).to(device)
     else:
         raise ValueError(f"Unknown model name: {CONFIG.get('model', {}).get('name')}")
     

@@ -111,7 +111,6 @@ class SonarPairDataset(Dataset):
         heading_cos = np.cos(heading_2d)
 
         channels = []
-        print(self.meta_config.get("channel", None))
         if(self.meta_config.get("channel", None) is not None):
 
             for ch in self.meta_config.get("channel", []):
@@ -127,9 +126,6 @@ class SonarPairDataset(Dataset):
                     channels.append(heading_sin)
                 elif ch == "heading_cos":
                     channels.append(heading_cos)
-
-                print(len(channels))
-
         # Empilement dynamique des canaux souhaités (ex: [img_np, pitch_2d, roll_2d])
         stacked = np.stack(channels, axis=0)
 
@@ -199,6 +195,8 @@ class SonarPairDataset(Dataset):
                     meta_features.append(is_centered)
                 elif meta_name == "side":
                     meta_features.append(side_val)
+                elif meta_name == "DRI":
+                    meta_features.append(det_range_val)
 
         global_meta = torch.tensor(meta_features, dtype=torch.float32)
 
@@ -220,7 +218,7 @@ class SonarPairDataset(Dataset):
 def build_dataloader(groups: dict, config: dict, batch_size: int | None = None, shuffle: bool = False):
     target_size = tuple(config.get("target_size", (256, 256)))
     effective_batch_size = batch_size if batch_size is not None else int(config.get("batch_size", 16))
-    dataset = SonarPairDataset(groups, target_size=target_size, meta_config=config.get("model", {}))
+    dataset = SonarPairDataset(groups, target_size=target_size, meta_config=config)
     
     loader = DataLoader(
         dataset,

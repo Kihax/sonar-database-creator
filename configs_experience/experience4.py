@@ -7,10 +7,10 @@ Il contient les paramètres d'apprentissage, de modèle et de données pour l'en
 config = {
     "name": "experience1",
 
-    "epochs": 5,
+    "epochs": 15,
     "learning_rate": 1e-4,
     "data": {
-        "dataset": "HP-Centered-100",
+        "dataset": "Grid-All-eq-sf100-a.nc",
         "dataset_folder": "./database/",
         "target_size": (3000, 100),
         "train_ratio": 0.60,
@@ -18,7 +18,7 @@ config = {
         "test_ratio": 0.20,
         "batch_size": 64,
         "min_imagettes": 0,
-        "min_detection_range": 0,
+        "min_detection_range": 0.35, # without nadir
         "max_detection_range": 1.0,
         "centered": False,
         "channel": ["image"],

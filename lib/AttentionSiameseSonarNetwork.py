@@ -64,16 +64,17 @@ class AttentionSiameseSonarNetwork(nn.Module):
     def __init__(self, model_config: dict):
         super().__init__()
         
-        self.depth = model_config.get("depth", 3)
-        base_channels = model_config.get("base_channels", 16)
-        kernel_size = model_config.get("kernel_size", 3)
-        fc_hidden_dim = model_config.get("fc_hidden_dim", 256)
-        self.embedding_dim = model_config.get("embedding_dim", 128)
-        self.meta_feature_count = model_config.get("meta_feature_count", 0)
+        self.depth = model_config.get("model", {}).get("depth", 3)
+        base_channels = model_config.get("model", {}).get("base_channels", 16)
+        kernel_size = model_config.get("model", {}).get("kernel_size", 3)
+        fc_hidden_dim = model_config.get("model", {}).get("fc_hidden_dim", 256)
+        self.embedding_dim = model_config.get("model", {}).get("embedding_dim", 128)
+        self.meta_feature_count = model_config.get("data", {}).get("meta", []).__len__()
+        in_channels = model_config.get("data", {}).get("channel", []).__len__() 
 
         # 1. Encodeur CNN + Attention Spatiale (CBAM)
         layers = []
-        in_channels = 1
+        
         for i in range(self.depth):
             out_channels = base_channels * (2 ** i)
             layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2))
