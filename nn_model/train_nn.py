@@ -22,7 +22,7 @@ name = CONFIG.get("name", "default_model_name")
 print(f"Model name: {name}")
 
 print("prepare dataset")
-set_seed(CONFIG.get("seed", 42))
+set_seed(CONFIG.get("seed", 43))
 train_groups, val_groups, test_groups = prepare_datasets(CONFIG["data"])
 
 train_loader, train_dataset = build_dataloader(train_groups, CONFIG["data"], shuffle=True)

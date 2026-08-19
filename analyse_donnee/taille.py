@@ -14,8 +14,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import netCDF4 as nc
 
-DATASET_NAME = "Grid-All-eq-sf100-wn.nc"
-DATASET_PATH = Path("./model/") / DATASET_NAME
+DATASET_NAME = "HP-Centered-100.nc"
+DATASET_PATH = Path("./database/") / DATASET_NAME
 
 if not DATASET_PATH.exists():
     print(f"❌ Fichier non trouvé : {DATASET_PATH.resolve()}")

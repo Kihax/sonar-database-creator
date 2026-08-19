@@ -21,7 +21,7 @@ from lib.ReadDatabaseImagette import ReadDatabaseImagette
 from lib.ScrollImageViewer import ScrollImageViewer
 
 # 1. Chargement du fichier NetCDF
-dt = get_tree_from_file("Grid-All-eq-sf100.nc", "./database/")
+dt = get_tree_from_file("HP-Centered-100.nc", "./database/")
 dts = [dt]
 
 # 2. Extraction des imagettes
