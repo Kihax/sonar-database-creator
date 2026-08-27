@@ -5,12 +5,12 @@ Il contient les paramètres d'apprentissage, de modèle et de données pour l'en
 """
 
 config = {
-    "name": "experience1",
+    "name": "experience4",
 
-    "epochs": 15,
+    "epochs": 5,
     "learning_rate": 1e-4,
     "data": {
-        "dataset": "Grid-All-eq-sf100-a.nc",
+        "dataset": "Grid-All-eq-sf100-wn-a",
         "dataset_folder": "./database/",
         "target_size": (3000, 100),
         "train_ratio": 0.60,
@@ -33,7 +33,7 @@ config = {
         "temperature": 0.07
     },
     "model": {
-        "name": "AttentionSiameseSonarNetwork",
+        "name": "SiameseSonarNetwork",
         "depth": 3,
         "base_channels": 16,
         "save_best_model": True

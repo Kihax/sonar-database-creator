@@ -7,7 +7,7 @@ Il contient les paramètres d'apprentissage, de modèle et de données pour l'en
 config = {
     "name": "experience1",
 
-    "epochs": 5,
+    "epochs": 15,
     "learning_rate": 1e-4,
     "data": {
         "dataset": "HP-Centered-100",
@@ -33,7 +33,7 @@ config = {
         "temperature": 0.07
     },
     "model": {
-        "name": "AttentionSiameseSonarNetwork",
+        "name": "SiameseSonarNetwork",
         "depth": 3,
         "base_channels": 16,
         "save_best_model": True

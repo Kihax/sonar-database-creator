@@ -14,7 +14,7 @@ class SiameseSonarNetwork(nn.Module):
 
         # 1. Extrait visuel CNN (sur les images sonar)
         layers = []
-        in_channels = 1
+        in_channels = len(model_config.get("data", {}).get("channel", []))
         for i in range(self.depth):
             out_channels = base_channels * (2 ** i)
             layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=kernel_size // 2))

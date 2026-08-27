@@ -5,10 +5,10 @@ Ce script permet d'entrainer le réseau de neurones, la configuration est adapta
 import sys
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = Path(__file__).resolve().parent
 
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+if str(ROOT_DIR.parent) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR.parent))
 
 import torch
 
@@ -16,7 +16,7 @@ from lib.get_model import get_model, get_loss
 from lib.SonarPairDataset import build_dataloader, prepare_datasets
 from lib.utility_training import save_history_to_csv, ROOT_DIR, train, save_model, set_seed
 
-from configs_experience.experience1 import config as CONFIG
+from configs_experience.experience16 import config as CONFIG
 
 name = CONFIG.get("name", "default_model_name")
 print(f"Model name: {name}")

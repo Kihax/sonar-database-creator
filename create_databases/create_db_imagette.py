@@ -17,7 +17,7 @@ from lib.DatabaseCreatorImagette import DatabaseCreatorImagette
 from lib.ReadDatabasePing import ReadDatabasePing
 import numpy as np
 
-folder_path = "../refactored_data/"
+folder_path = "./refactored_data/"
 
 files = get_files("./refactored_data/")
 dts = []

@@ -15,7 +15,7 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 from lib.LossFunctions import evaluate_loss
 
-ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
 def set_seed(seed: int = 42) -> None:

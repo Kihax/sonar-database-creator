@@ -17,7 +17,7 @@ from lib.ReadDatabasePing import ReadDatabasePing
 import math
 
 # base de données tempon
-folder_path = "../refactored_data/"
+folder_path = "./refactored_data/"
 files = get_files("./refactored_data/")
 dts_pings = []
 
@@ -62,7 +62,7 @@ for i in range(len(points_interest)):
             print(f"   -> Groupe {j} (Ping {ping_intesting[j]}, Sample {sample_interesting[j]})")
             proches_trouves = True
 
-dci = DatabaseCreatorImagette("./HP-Centered-100.nc") # création du fichier de la base de données
+dci = DatabaseCreatorImagette("./model/HP-Centered-100.nc") # création du fichier de la base de données
 init_main = False
 total_groups = len(points_interest)
 

@@ -16,7 +16,7 @@ from lib.DatabaseCreatorImagette import DatabaseCreatorImagette
 from lib.ReadDatabasePing import ReadDatabasePing
 import numpy as np
 
-folder_path = "../refactored_data/"
+folder_path = "./refactored_data/"
 
 files = get_files("./refactored_data/")
 dts = []
@@ -63,7 +63,7 @@ print(f"Dimensions grille: {nb_lignes} x {nb_colonnes}")
 
 dictionnaire_imagettes = {}
 
-dci = DatabaseCreatorImagette("./Grid-All-eq-sf100-without-nadir-augmented.nc")
+dci = DatabaseCreatorImagette("./database/Grid-All-eq-sf100-wn-a.nc")
 
 total_groups = nb_lignes * nb_colonnes
 

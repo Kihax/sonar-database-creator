@@ -16,7 +16,7 @@ from lib.ReadDatabasePing import ReadDatabasePing
 from lib.ReadDatabaseImagette import ReadDatabaseImagette
 
 # ouverture de la base de données et extraction des imagettes
-dt_imagettes = get_tree_from_file("Grid-All-eq-sf100", "./database/")
+dt_imagettes = get_tree_from_file("Grid-All-eq-sf100.nc", "./database/")
 rdi = ReadDatabaseImagette([dt_imagettes])
 rdi.extract()
 
