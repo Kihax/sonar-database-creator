@@ -9,3 +9,5 @@ code/.venv
 code_v_extraction_image/__pycache__
 code/lib/__pycache__
 launch.json
+model/*.pt
+epochs/*.csv

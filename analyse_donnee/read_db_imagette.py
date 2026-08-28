@@ -14,7 +14,7 @@ from lib.file_management import get_tree_from_file
 from lib.ReadDatabaseImagette import ReadDatabaseImagette
 from lib.ScrollImageViewer import ScrollImageViewer
 
-dt = get_tree_from_file("HP-Centered-100.nc", "../database/")
+dt = get_tree_from_file("HP-Centered-100.nc", "./database/")
 dts = [dt]
 
 rdi = ReadDatabaseImagette(dts)
